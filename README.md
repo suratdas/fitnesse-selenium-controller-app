@@ -4,6 +4,8 @@ If you are running your web based UI automation using Selenium, you may prefer t
 
 ## Screenshots
 
-[!alt_tag](https://github.com/suratdas/fitnesse-selenium-controller-app/blob/master/selenium_tab.png)
-[!alt_tag](https://github.com/suratdas/fitnesse-selenium-controller-app/blob/master/fitnesse_tab.png)
-[!alt_tag](https://github.com/suratdas/fitnesse-selenium-controller-app/blob/master/find_method.png)
+Below screenshots shows the features of this app
+
+![alt_tag](https://github.com/suratdas/fitnesse-selenium-controller-app/blob/master/selenium_tab.png)
+![alt_tag](https://github.com/suratdas/fitnesse-selenium-controller-app/blob/master/fitnesse_tab.png)
+![alt_tag](https://github.com/suratdas/fitnesse-selenium-controller-app/blob/master/find_method.png)
