@@ -1,0 +1,12 @@
+Setup:
+======
+    1. Launch this tool and on Fitnesse tab of this tool, Start fitnesse. On Selenium tab, start the hub(server), and start nodes(clients). If you don't have the fitnesse or selenium jar files on the same folder, you may be prompted to get those files when you start the server.
+    2. Click "Launch fitnesse" in Fitnesse tab and from the opened page, and it opens the default fitnesse page.
+
+Features:
+=========
+    1. Even if you close this tool, the servers/nodes are still in use (not killed). THIS APP IS NOT TESTED FOR MAC.
+    2. Most editable text fields are saved on clicking "Run" button/icon.
+    3. You can edit host/port info to launch fitnesse from any server.
+    4. To upgrade Selenium (provided major version does not change), please place the new Selenium file in the same folder as this tool. It will use the latest file. You may have to restart the Selenium hub/nodes.
+    5. Sometimes you want to find/modify a script table method but finding which existing test cases use this method may be tricky using regular Windows find. Please use "FindText" feature in this tool for this purpose.
