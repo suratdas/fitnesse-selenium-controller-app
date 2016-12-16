@@ -622,7 +622,7 @@ public class AutomationSetup extends JFrame {
                         if (!line.contains(word.toLowerCase())) {
                             break;
                         } else {
-                            line.replace(word.toLowerCase(), "");
+                            line = line.endsWith(word.toLowerCase()) ? line : line.split(word.toLowerCase())[1];
                             count++;
                         }
                     }
