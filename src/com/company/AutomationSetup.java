@@ -84,6 +84,9 @@ public class AutomationSetup extends JFrame {
     private JLabel labelFindTextStatus;
     private JCheckBox showFullPathCheckBox;
     private JCheckBox showLineNumbersCheckBox;
+    private JButton btnReplace;
+    private JTextField txtReplace;
+    private JCheckBox checkboxExactSearch;
     private JScrollPane findTextScrollPane;
     private JScrollPane scrollPane;
     private JTextArea txtHelpText;
@@ -101,6 +104,8 @@ public class AutomationSetup extends JFrame {
     private String seleniumJarFileName = "";
 
     java.util.List<String> extensionsList = new ArrayList<>();
+    java.util.List<String> foundFileNameList = new ArrayList<>();
+    java.util.List<Integer> lineNumebrInFoundFileNames = new ArrayList<>();
 
 
     public static BufferedImage makeRoundedCorner(ImageIcon image, int cornerRadius) {
@@ -590,16 +595,41 @@ public class AutomationSetup extends JFrame {
                     @Override
                     public void run() {
                         labelFindTextStatus.setText("");
+                        btnReplace.setVisible(false);
+                        txtReplace.setVisible(false);
+                        progressBar1.setStringPainted(false);
+                        progressBar1.setIndeterminate(true);
                         progressBar1.setVisible(true);
                         textArea1.setText("");
                         DefaultCaret caret = (DefaultCaret) textArea1.getCaret();
                         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
-                        searchTextInFiles();
+                        if (searchTextInFiles() != 0) {
+                            btnReplace.setVisible(true);
+                            txtReplace.setVisible(true);
+                        }
                         progressBar1.setVisible(false);
                     }
                 }).start();
             }
         });
+
+        btnReplace.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        progressBar1.setVisible(true);
+                        textArea1.setText("");
+                        DefaultCaret caret = (DefaultCaret) textArea1.getCaret();
+                        caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+                        replaceTextInFiles();
+                        progressBar1.setVisible(false);
+                    }
+                }).start();
+            }
+        });
+
     }
 
     private String readCommandPromptInputAndError() throws Exception {
@@ -619,7 +649,7 @@ public class AutomationSetup extends JFrame {
         return allLines;
     }
 
-    private void searchTextInFiles() {
+    private int searchTextInFiles() {
         if (readValueFromConfig("findTextFileExtensions") != txtFileExtensions.getText())
             writeToConfig("findTextFileExtensions:" + txtFileExtensions.getText());
         if (readValueFromConfig("findTextMethodName") != txtMethodName.getText())
@@ -629,48 +659,121 @@ public class AutomationSetup extends JFrame {
         long startTime = System.currentTimeMillis();
 
         String methodName = txtMethodName.getText();
-        java.util.List<String> methodWords = splitMethodNameIntoWords(methodName);
+        java.util.List<String> methodWords = checkboxExactSearch.isSelected() ? Arrays.asList(methodName) : splitMethodNameIntoWords(methodName);
         java.util.List<String> fileNameList = new ArrayList<>();
-        java.util.List<String> foundFileNameList = new ArrayList<>();
         extensionsList = Arrays.asList(readValueFromConfig("findTextFileExtensions").split(","));
+        foundFileNameList.clear();
+        lineNumebrInFoundFileNames.clear();
 
         getFileNames(fileNameList, Paths.get(txtFindTextSelectedFolder.getText()));
         Predicate<String> stringPredicate = p -> findCorrectFiles(p);
         fileNameList.removeIf(stringPredicate);
 
         labelFindTextStatus.setText("Searching for \"" + methodName + "\" in " + fileNameList.size() + " files...");
+        progressBar1.setIndeterminate(false);
+        progressBar1.setMaximum(100);
+        progressBar1.setMinimum(0);
+        int fileCounter = 0;
 
         for (String fileName : fileNameList) {
+            try {
+                progressBar1.setValue((100 * ++fileCounter) / fileNameList.size());
+                progressBar1.setStringPainted(true);
+            } catch (ArithmeticException e) {
+            }
+
             File file = new File(fileName);
             try {
                 Scanner scanner = new Scanner(file);
                 int lineNum = 0;
                 while (scanner.hasNextLine()) {
-                    String line = scanner.nextLine().toLowerCase();
+                    String line = scanner.nextLine();
                     ++lineNum;
                     int count = 0;
                     for (String word : methodWords) {
-                        if (!line.contains(word.toLowerCase())) {
+                        if (!line.toLowerCase().contains(word.toLowerCase())) {
                             break;
                         } else {
-                            line = line.endsWith(word.toLowerCase()) ? line : line.split(word.toLowerCase())[1];
+                            if (checkboxExactSearch.isSelected()) {
+                                line = line.replaceAll(methodName, txtReplace.getText());
+                                count++;
+                                break;
+                            }
+                            line = line.toLowerCase().endsWith(word.toLowerCase()) ? line : line.substring(line.toLowerCase().indexOf(word.toLowerCase(), 0) + word.length());
                             count++;
                         }
                     }
                     if (count == methodWords.size()) {
                         foundFileNameList.add(fileName);
+                        lineNumebrInFoundFileNames.add(lineNum);
                         String textToAppend = "\n";
                         textToAppend += showFullPathCheckBox.isSelected() ? fileName : fileName.replace(txtFindTextSelectedFolder.getText(), "");
                         textToAppend += showLineNumbersCheckBox.isSelected() ? " Line:" + lineNum : "";
                         textArea1.append(textToAppend);
-                        break;
+                        //break;
                     }
                 }
             } catch (FileNotFoundException e) {
             }
         }
         textArea1.append("\n");
-        labelFindTextStatus.setText("Found " + foundFileNameList.size() + " files with given method name. Took " + (System.currentTimeMillis() - startTime) + " ms to search.");
+        labelFindTextStatus.setText("Found " + foundFileNameList.size() + " occurrences with given method name. Took " + (System.currentTimeMillis() - startTime) + " ms to search.");
+        return foundFileNameList.size();
+    }
+
+    private void replaceTextInFiles() {
+        long startTime = System.currentTimeMillis();
+        String findString = txtMethodName.getText();
+        String replaceString = txtReplace.getText();
+        String line = "";
+
+        for (int fileCounter = 0; fileCounter < foundFileNameList.size(); ++fileCounter) {
+            try {
+                progressBar1.setValue((100 * fileCounter) / foundFileNameList.size());
+                progressBar1.setStringPainted(true);
+            } catch (ArithmeticException e) {
+            }
+            int lineCounter = 0;
+            String totalLines = "";
+            String fileName = foundFileNameList.get(fileCounter);
+            try {
+                FileReader fileReader = new FileReader(fileName);
+                BufferedReader bufferedReader = new BufferedReader(fileReader);
+                while ((line = bufferedReader.readLine()) != null) {
+                    if (++lineCounter == lineNumebrInFoundFileNames.get(fileCounter)) {
+                        if (checkboxExactSearch.isSelected()) {
+                            line = line.replace(findString, replaceString);
+                        } else {
+                            String[] splitByDelimiter = line.split("\\|");
+                            for (String methodName : splitByDelimiter) {
+                                if (methodName.replaceAll(" ", "").toLowerCase().contains(findString.toLowerCase())) {
+                                    String appending = methodName.replace(" ", "").toLowerCase().replace(findString.toLowerCase(), "");
+                                    String modifiedReplaceString = replaceString + appending;
+                                    line = line.replace(methodName, modifiedReplaceString);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    totalLines += line + "\n";
+                }
+                bufferedReader.close();
+                // write the new String with the replaced line OVER the same file
+                FileOutputStream fileOut = new FileOutputStream(fileName);
+                fileOut.write(totalLines.getBytes());
+                fileOut.flush();
+                fileOut.close();
+                textArea1.append(fileName + "\n");
+
+            } catch (Exception e) {
+                if (e.toString().toLowerCase().contains("access is denied")) {
+                    textArea1.append("Could not replace file as access is denined on the file.\n");
+                }
+            }
+        }
+        labelFindTextStatus.setText("Replaced " + foundFileNameList.size() + " occurrences with \"" + replaceString + "\". Took " + (System.currentTimeMillis() - startTime) + " ms.");
+        btnReplace.setVisible(false);
+        txtReplace.setVisible(false);
     }
 
     private java.util.List<String> splitMethodNameIntoWords(String s) {
@@ -731,7 +834,7 @@ public class AutomationSetup extends JFrame {
         if (show == "yes") {
             int n = JOptionPane.showConfirmDialog(
                     setupPanel,
-                    "You should click \"View\" to confirm configuration whenever you start hub/node. \nIt's a good idea to check by running a fitnesse test. If the test still does not run, relauch this program.\n\nDo you want to be reminded again?",
+                    "You should click \"View\" to confirm configuration whenever you start hub/node. \nIt's a good idea to checkExactSearch by running a fitnesse test. If the test still does not run, relauch this program.\n\nDo you want to be reminded again?",
                     "Check View",
                     JOptionPane.YES_NO_OPTION);
             if (n != 0)
