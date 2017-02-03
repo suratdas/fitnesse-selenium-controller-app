@@ -115,7 +115,7 @@
                         </constraints>
                         <properties>
                           <editable value="false"/>
-                          <text value="C:\Wiki"/>
+                          <text value=""/>
                         </properties>
                       </component>
                       <component id="8aa12" class="javax.swing.JLabel">
