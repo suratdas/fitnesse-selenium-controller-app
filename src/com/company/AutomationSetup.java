@@ -175,7 +175,6 @@ public class AutomationSetup extends JFrame {
         try {
             ImageIO.write(makeRoundedCorner(stopIcon, 80), "png", new File("stop.rounded.png"));
         } catch (IOException e) {
-            e.printStackTrace();
         }
         */
         try {
@@ -210,7 +209,7 @@ public class AutomationSetup extends JFrame {
         //btnSafariStart.setIcon(runIcon);
         //btnSafariStop.setIcon(stopIcon);
 
-        labelHelpAbout.setText("If you see any issue please leave a comment in github.");
+        labelHelpAbout.setText("If you see any issue please leave a comment or contact Surat Das.");
 
         //Setup the Selenium tab port text boxes
         SetupSeleniumTextBoxes();
@@ -237,11 +236,20 @@ public class AutomationSetup extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 if (txtPort.getText().trim().length() > 1) fitnessePort = txtPort.getText().trim();
                 if (isPortInUse(Integer.parseInt(txtPort.getText().trim()))) {
-                    txtLogs.append(getCurrentTimeStamp() + "Port is blocked by Fitnesse or other program. You can try to stop Fitnesse.");
+                    txtLogs.append(getCurrentTimeStamp() + "Port is blocked. If it is in use by Fitnesse, stopping and starting Fitnesse again may help.");
                 } else if (fileExists("fitnesse-standalone.jar")) {
+                    txtLogs.append(getCurrentTimeStamp() + "Trying to run Fitnesse...");
                     try {
-                        Runtime.getRuntime().exec("java -jar fitnesse-standalone.jar " + txtFitnesseCommandLineArguments.getText());
-                        txtLogs.append(getCurrentTimeStamp() + "Fitnesse is running.");
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    String commandPromptString = readCommandPromptInputAndError();
+                                    txtLogs.append(getCurrentTimeStamp() + commandPromptString);
+                                } catch (Exception e1) {
+                                }
+                            }
+                        }).start();
                         writeToConfig("port:" + fitnessePort);
                         writeToConfig("fitnesseLocation:" + centralWikiTextField.getText());
                         if (!fitnesseCommandLineArgumentString.equals(txtFitnesseCommandLineArguments.getText())) {
@@ -265,7 +273,7 @@ public class AutomationSetup extends JFrame {
                 String enteredFitnessePort = txtPort.getText().trim();
                 fitnessePort = (enteredFitnessePort.length() > 1) ? enteredFitnessePort : fitnessePort;
                 if (!isPortInUse(Integer.valueOf(fitnessePort))) {
-                    txtLogs.append(getCurrentTimeStamp() + "Fitnesse is not running on this port.");
+                    txtLogs.append(getCurrentTimeStamp() + "Fitnesse is not running on the specified port.");
                 } else {
                     String launchFitnessePort = (fitnessePort.equals("80")) ? "" : ":" + fitnessePort;
                     try {
@@ -280,12 +288,16 @@ public class AutomationSetup extends JFrame {
         stopFitnesseButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                try {
-                    if (killProcess(Integer.parseInt(fitnessePort)).contains("not in use"))
-                        throw new Exception("Port is already free.");
-                    txtLogs.append(getCurrentTimeStamp() + "Released port: " + fitnessePort);
-                } catch (Exception e1) {
-                    txtLogs.append(getCurrentTimeStamp() + e1.getMessage());
+                if (!isPortInUse(Integer.valueOf(fitnessePort))) {
+                    txtLogs.append(getCurrentTimeStamp() + "Fitnesse is not running on the specified port.");
+                } else {
+                    try {
+                        if (killProcess(Integer.parseInt(fitnessePort)).contains("not in use"))
+                            throw new Exception("Port is already free.");
+                        txtLogs.append(getCurrentTimeStamp() + "Released port: " + fitnessePort);
+                    } catch (Exception e1) {
+                        txtLogs.append(getCurrentTimeStamp() + e1.getMessage());
+                    }
                 }
             }
         });
@@ -296,7 +308,6 @@ public class AutomationSetup extends JFrame {
                 try {
                     Runtime.getRuntime().exec("explorer.exe " + centralWikiTextField.getText() + "\"");
                 } catch (IOException e1) {
-                    e1.printStackTrace();
                 }
             }
         });
@@ -542,7 +553,10 @@ public class AutomationSetup extends JFrame {
             }
         });
 
-        populateHelpTexts("help.txt");
+        try {
+            populateHelpTexts("help.txt");
+        } catch (NullPointerException e) {
+        }
 
         resetThisToolButton.addActionListener(new ActionListener() {
             @Override
@@ -586,6 +600,23 @@ public class AutomationSetup extends JFrame {
                 }).start();
             }
         });
+    }
+
+    private String readCommandPromptInputAndError() throws Exception {
+        Runtime rt = Runtime.getRuntime();
+        Process process = rt.exec("java -jar fitnesse-standalone.jar " + txtFitnesseCommandLineArguments.getText());
+        BufferedReader stdError = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+        String allLines = "";
+        int count = 0;
+
+        while (++count < 15) {
+            if (!process.isAlive() && count == 5) break;
+            String eachLine = stdError.readLine();
+            if (eachLine != null && eachLine.toLowerCase().contains("starting fitnesse on port"))
+                return ": Fitnesse has started on your selected port.";
+            allLines += eachLine + "\n";
+        }
+        return allLines;
     }
 
     private void searchTextInFiles() {
@@ -718,13 +749,10 @@ public class AutomationSetup extends JFrame {
             UIManager.setLookAndFeel(
                     UIManager.getSystemLookAndFeelClassName());
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
         } catch (InstantiationException e) {
-            e.printStackTrace();
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
         } catch (UnsupportedLookAndFeelException e) {
-            e.printStackTrace();
+        } catch (NullPointerException e) {
         }
         JFrame frame = new JFrame("Automation Setup");
         frame.setContentPane(new AutomationSetup().setupPanel);
@@ -866,15 +894,35 @@ public class AutomationSetup extends JFrame {
 
     private String getLatestSeleniumFilename() {
         File f = new File(".");
-        ArrayList<String> allFilesnames = new ArrayList<String>(Arrays.asList(f.list()));
+        ArrayList<String> allFileNames = new ArrayList<String>(Arrays.asList(f.list()));
+        allFileNames.removeIf(name -> !(name.startsWith("selenium") && name.contains("standalone")));
+
+        int MajorVersion = 0;
+        int MinorVersion = 0;
+        int MinorSubVersion = 0;
+        int MinorSubSubVersion = 0;
+
         String latestJarFileName = "";
-        int version = 1;
-        for (String name : allFilesnames) {
-            if (name.startsWith("selenium") && name.contains("standalone")) {
-                int currentFileVersion = Integer.parseInt(name.replaceAll("\\D+", ""));
-                if (version < currentFileVersion) {
-                    latestJarFileName = name;
-                    version = currentFileVersion;
+
+        for (String name : allFileNames) {
+            String[] versions = name.split("standalone")[1].replaceAll("-", "").replace(".jar", "").split("\\.");
+            for (int i = 0; i < 4; ++i) {
+                try {
+                    if (i == 0 && Integer.parseInt(versions[i]) > MajorVersion) {
+                        latestJarFileName = name;
+                        MajorVersion = Integer.parseInt(versions[i]);
+                    } else if (i == 1 && Integer.parseInt(versions[i]) > MinorVersion) {
+                        latestJarFileName = name;
+                        MinorVersion = Integer.parseInt(versions[i]);
+                    } else if (i == 2 && Integer.parseInt(versions[i]) > MinorSubVersion) {
+                        latestJarFileName = name;
+                        MinorSubVersion = Integer.parseInt(versions[i]);
+                    } else if (i == 3 && Integer.parseInt(versions[i]) > MinorSubSubVersion) {
+                        latestJarFileName = name;
+                        MinorSubSubVersion = Integer.parseInt(versions[i]);
+                    }
+                } catch (IndexOutOfBoundsException e) {
+                    break;
                 }
             }
         }
@@ -984,16 +1032,19 @@ public class AutomationSetup extends JFrame {
             String killingCommand = "cmd.exe /c FOR /F \"tokens=5 delims= \" %P IN ('netstat -a -n -o ^| findstr :" + portNumber + "') DO @ECHO %P && @IF NOT \"%P\"==\"0\" (Taskkill.exe /F /PID %P)";
             Runtime.getRuntime().exec(killingCommand);
         } catch (IOException e1) {
-            e1.printStackTrace();
         }
     }
 
     private void populateHelpTexts(String fileName) {
         try {
             helpPanel.setLayout(new GridLayout());
-            ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-            InputStream is = classloader.getResourceAsStream(fileName);
-            BufferedReader br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+            BufferedReader br = null;
+            try {
+                ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+                InputStream is = classloader.getResourceAsStream(fileName);
+                br = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+            } catch (Exception e) {
+            }
             String line = null;
             JTextArea jTextArea = new JTextArea();
             Font font = new Font("Arial", Font.PLAIN, 12);
@@ -1002,15 +1053,30 @@ public class AutomationSetup extends JFrame {
             jTextArea.setBackground(Color.lightGray);
             jTextArea.setFont(font);
             helpPanel.add(jTextArea);
-            while ((line = br.readLine()) != null) {
+            if (br == null)
+                jTextArea.append("Setup:\n" +
+                        "======\n" +
+                        "    1. Latest tests : Place all files in a known location.\n" +
+                        "    2. Latest executable : Do one of below two options\n" +
+                        "       a. Build the project yourself\n" +
+                        "       b. Get binaries from someone else and place it in <SourceControlLocation>\\FitnesseRoot\\lib\n" +
+                        "    3. On Fitnesse tab of this tool, Start fitnesse. On Selenium tab, start the hub(server), and start nodes(clients).\n" +
+                        "    4. Click \"Launch fitnesse\" in Fitnesse tab and from the opened page, click \"root\" link on the bottom of the page and verify that the path defined here matches with what you have in your machine.\n" +
+                        "    5. Navigate to http://localhost:<port>/ and navigate to the desired test and execute.\n" +
+                        "\n" +
+                        "Features:\n" +
+                        "=========\n" +
+                        "    1. Even if you close this tool, the servers/nodes are still in use (not killed).\n" +
+                        "    2. All editable text fields are saved on clicking \"Run\" button/icon for later re-use.\n" +
+                        "    3. You can edit host/port info to launch Fitnesse from any server.\n" +
+                        "    4. To upgrade Selenium, please place the new Selenium file in the same folder as this tool. It will use the latest file. You may have to restart the Selenium hub/nodes.\n" +
+                        "    5. If you are using script table, sometimes you want to modify a method and finding which existing test cases use this method may be tricky using regular Windows find. Please use \"FindText\" feature in this tool for this purpose.\n");
+            else while ((line = br.readLine()) != null) {
                 jTextArea.append(line + "\n");
-
             }
             br.close();
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 }
