@@ -538,10 +538,10 @@
               </grid>
             </children>
           </grid>
-          <grid id="3ce74" layout-manager="GridLayoutManager" row-count="3" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+          <grid id="3ce74" layout-manager="GridLayoutManager" row-count="4" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
             <margin top="10" left="0" bottom="0" right="0"/>
             <constraints>
-              <tabbedpane title="FindText"/>
+              <tabbedpane title="FindAndReplace"/>
             </constraints>
             <properties/>
             <border type="none"/>
@@ -551,34 +551,11 @@
                 <constraints>
                   <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="1" hsize-policy="1" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                 </constraints>
-                <properties/>
+                <properties>
+                  <visible value="true"/>
+                </properties>
                 <border type="etched" title="Search Criteria"/>
                 <children>
-                  <component id="3c472" class="javax.swing.JTextField" binding="txtMethodName">
-                    <constraints>
-                      <grid row="0" column="0" row-span="1" col-span="2" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
-                        <preferred-size width="150" height="-1"/>
-                      </grid>
-                    </constraints>
-                    <properties>
-                      <inheritsPopupMenu value="true"/>
-                      <text value="EnterMethodName"/>
-                      <toolTipText value="Enter the method name as it is from the code."/>
-                    </properties>
-                  </component>
-                  <component id="ac0ff" class="javax.swing.JTextField" binding="txtFileExtensions">
-                    <constraints>
-                      <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
-                        <preferred-size width="150" height="-1"/>
-                      </grid>
-                    </constraints>
-                    <properties>
-                      <editable value="true"/>
-                      <enabled value="true"/>
-                      <text value=""/>
-                      <toolTipText value="Modify file extensions to search if required."/>
-                    </properties>
-                  </component>
                   <component id="ee5cc" class="javax.swing.JTextField" binding="txtFindTextSelectedFolder">
                     <constraints>
                       <grid row="1" column="1" row-span="1" col-span="2" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
@@ -586,23 +563,6 @@
                       </grid>
                     </constraints>
                     <properties/>
-                  </component>
-                  <component id="d0757" class="javax.swing.JButton" binding="btnFindTextChangeFolder">
-                    <constraints>
-                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
-                    </constraints>
-                    <properties>
-                      <text value="Change Folder"/>
-                    </properties>
-                  </component>
-                  <component id="d8c17" class="javax.swing.JProgressBar" binding="progressBar1" default-binding="true">
-                    <constraints>
-                      <grid row="2" column="0" row-span="1" col-span="3" vsize-policy="0" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
-                    </constraints>
-                    <properties>
-                      <enabled value="false"/>
-                      <indeterminate value="true"/>
-                    </properties>
                   </component>
                   <component id="756a8" class="javax.swing.JCheckBox" binding="showFullPathCheckBox" default-binding="true">
                     <constraints>
@@ -629,12 +589,75 @@
                       <text value="Search"/>
                     </properties>
                   </component>
+                  <component id="e9cf7" class="javax.swing.JButton" binding="btnReplace">
+                    <constraints>
+                      <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties>
+                      <actionCommand value=""/>
+                      <text value="Replace With"/>
+                      <visible value="false"/>
+                    </properties>
+                  </component>
+                  <component id="a2a7d" class="javax.swing.JTextField" binding="txtReplace">
+                    <constraints>
+                      <grid row="2" column="1" row-span="1" col-span="2" vsize-policy="0" hsize-policy="7" anchor="8" fill="1" indent="1" use-parent-layout="false">
+                        <preferred-size width="150" height="-1"/>
+                      </grid>
+                    </constraints>
+                    <properties>
+                      <toolTipText value="Always replace whole word (between | and | in wiki page)"/>
+                      <visible value="false"/>
+                    </properties>
+                  </component>
+                  <component id="3c472" class="javax.swing.JTextField" binding="txtMethodName">
+                    <constraints>
+                      <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="150" height="-1"/>
+                      </grid>
+                    </constraints>
+                    <properties>
+                      <inheritsPopupMenu value="true"/>
+                      <text value="EnterMethodName"/>
+                      <toolTipText value="Enter the method name as it is from the code."/>
+                    </properties>
+                  </component>
+                  <component id="ac0ff" class="javax.swing.JTextField" binding="txtFileExtensions">
+                    <constraints>
+                      <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false">
+                        <preferred-size width="150" height="-1"/>
+                      </grid>
+                    </constraints>
+                    <properties>
+                      <editable value="true"/>
+                      <enabled value="true"/>
+                      <text value=""/>
+                      <toolTipText value="Modify file extensions to search if required."/>
+                    </properties>
+                  </component>
+                  <component id="d0757" class="javax.swing.JButton" binding="btnFindTextChangeFolder">
+                    <constraints>
+                      <grid row="1" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties>
+                      <text value="Change Folder"/>
+                    </properties>
+                  </component>
+                  <component id="195a5" class="javax.swing.JCheckBox" binding="checkboxExactSearch">
+                    <constraints>
+                      <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                    </constraints>
+                    <properties>
+                      <label value="Exact Search"/>
+                      <text value="Exact Search"/>
+                    </properties>
+                  </component>
                 </children>
               </grid>
               <grid id="6a90" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                 <margin top="0" left="0" bottom="0" right="0"/>
                 <constraints>
-                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="1" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
+                  <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="1" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties/>
                 <border type="none"/>
@@ -660,6 +683,15 @@
                 </constraints>
                 <properties>
                   <text value=""/>
+                </properties>
+              </component>
+              <component id="d8c17" class="javax.swing.JProgressBar" binding="progressBar1" default-binding="true">
+                <constraints>
+                  <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <enabled value="false"/>
+                  <indeterminate value="true"/>
                 </properties>
               </component>
             </children>
@@ -707,7 +739,7 @@
                       <enabled value="false"/>
                       <focusable value="false"/>
                       <foreground color="-16382458"/>
-                      <text value="Version 1.4.6"/>
+                      <text value="Version 1.4.7"/>
                     </properties>
                   </component>
                   <grid id="c31d2" binding="helpPanel" layout-manager="GridLayoutManager" row-count="1" column-count="1" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
