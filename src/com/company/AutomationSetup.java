@@ -22,6 +22,8 @@ import java.util.function.Predicate;
  * Created by Surat.Das on 2/25/2016.
  */
 public class AutomationSetup extends JFrame {
+
+    //region UI elements
     private JPanel setupPanel;
     private JTabbedPane tabbedPane1;
     private JPanel fitnesseTab;
@@ -91,6 +93,8 @@ public class AutomationSetup extends JFrame {
     private JScrollPane scrollPane;
     private JTextArea txtHelpText;
     JTextArea txtFindTextOutput;
+
+    //endregion UI elements
 
     private String fitnesseHost = "localhost";
     private String fitnessePort = "80";
@@ -297,8 +301,11 @@ public class AutomationSetup extends JFrame {
                     txtLogs.append(getCurrentTimeStamp() + "Fitnesse is not running on the specified port.");
                 } else {
                     try {
-                        if (killProcess(Integer.parseInt(fitnessePort)).contains("not in use"))
+                        String killProcessReturnValue = killProcess(Integer.parseInt(fitnessePort));
+                        if (killProcessReturnValue.contains("not in use"))
                             throw new Exception("Port is already free.");
+                        if (killProcessReturnValue.contains("may not have been released"))
+                            throw new Exception(killProcessReturnValue);
                         txtLogs.append(getCurrentTimeStamp() + "Released port: " + fitnessePort);
                     } catch (Exception e1) {
                         txtLogs.append(getCurrentTimeStamp() + e1.getMessage());
@@ -368,7 +375,7 @@ public class AutomationSetup extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (!fileExists("IEDriverServer.exe")) {
-                    showDialog("IE Driver file is missing.", "Please place IEDriverServer.exe in the same location as this tool.");
+                    showDialog("Driver file is missing.", "Place IEDriverServer.exe in the same location as this tool.");
                     return;
                 }
                 try {
@@ -379,7 +386,7 @@ public class AutomationSetup extends JFrame {
                     if (runSeleniumHubNode(seleniumJarFileName, ieBatCommand)) {
                         writeToConfig("seleniumIEPort:" + seleniumIEPort);
                         writeToConfig("seleniumIEVersion:" + browserVersionFromTextInput);
-                        txtSeleniumLogArea.append(getCurrentTimeStamp() + "Selenium node is started on port " + seleniumIEPort);
+                        txtSeleniumLogArea.append(getCurrentTimeStamp() + "Node may have started on port " + seleniumIEPort + ". Click \"View\" to verify.");
                         btnIERun.setVisible(false);
                         btnStopIE.setVisible(true);
                         try {
@@ -408,8 +415,7 @@ public class AutomationSetup extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (!fileExists("geckodriver.exe")) {
-                    showDialog("IE Driver file is missing.", "Please place geckodriver.exe in the same location as this tool.");
-                    return;
+                    showDialog("Driver file is missing.", "geckodriver.exe is needed to run higher version of selenium/browser. Place it in the same location as this tool, if required.");
                 }
                 try {
                     seleniumFirefoxPort = txtFFPort.getText().trim();
@@ -419,7 +425,7 @@ public class AutomationSetup extends JFrame {
                     if (runSeleniumHubNode(seleniumJarFileName, firefoxCommand)) {
                         writeToConfig("seleniumFirefoxPort:" + seleniumFirefoxPort);
                         writeToConfig("seleniumFirefoxVersion:" + browserVersionFromTextInput);
-                        txtSeleniumLogArea.append(getCurrentTimeStamp() + "Selenium node is started on port " + seleniumFirefoxPort);
+                        txtSeleniumLogArea.append(getCurrentTimeStamp() + "Node may have started on port " + seleniumFirefoxPort + ". Click \"View\" to verify.");
                         btnFirefoxRunButton.setVisible(false);
                         btnFirefoxStop.setVisible(true);
                         try {
@@ -447,7 +453,7 @@ public class AutomationSetup extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (!fileExists("chromedriver.exe")) {
-                    showDialog("Chromedriver file is missing.", "Please place chromedriver.exe in the same location as this tool.");
+                    showDialog("Driver file is missing.", "Place chromedriver.exe in the same location as this tool.");
                     return;
                 }
                 try {
@@ -458,7 +464,7 @@ public class AutomationSetup extends JFrame {
                     if (runSeleniumHubNode(seleniumJarFileName, chromeCommand)) {
                         writeToConfig("seleniumChromePort:" + seleniumChromePort);
                         writeToConfig("seleniumChromeVersion:" + browserVersionFromTextInput);
-                        txtSeleniumLogArea.append(getCurrentTimeStamp() + "Selenium node is started on port " + seleniumChromePort);
+                        txtSeleniumLogArea.append(getCurrentTimeStamp() + "Node may have started on port " + seleniumChromePort + ". Click \"View\" to verify.");
                         btnChromeRun.setVisible(false);
                         btnChromeStop.setVisible(true);
                         try {
@@ -834,7 +840,7 @@ public class AutomationSetup extends JFrame {
         if (show == "yes") {
             int n = JOptionPane.showConfirmDialog(
                     setupPanel,
-                    "You should click \"View\" to confirm configuration whenever you start hub/node. \nIt's a good idea to checkExactSearch by running a fitnesse test. If the test still does not run, relauch this program.\n\nDo you want to be reminded again?",
+                    "You should click \"View\" to confirm configuration whenever you start hub/node. \nIt's a good idea to check the setup by running a fitnesse test. If the test still does not run, relauch this program.\n\nDo you want to be reminded again?",
                     "Check View",
                     JOptionPane.YES_NO_OPTION);
             if (n != 0)
@@ -1119,13 +1125,13 @@ public class AutomationSetup extends JFrame {
         if (isPortInUse(port)) {
             int n = JOptionPane.showConfirmDialog(
                     setupPanel,
-                    "Releasing Port " + port + " may close other applications (e.g. your browser). \n\nDo you want to proceed?",
-                    "Confirm force kill",
+                    "Releasing Port " + port + " may close other applications.You should save your work. \n\nDo you want to proceed?",
+                    "Confirm stop",
                     JOptionPane.YES_NO_OPTION);
             if (n == 0)
                 killPort(Integer.toString(port));
-            else
-                return "The port " + port + " may not have been released. You can try to relaunch this tool and try again.";
+            else if (n == 1)
+                return "Port " + port + " may not have been released.";
         }
         return "released port";
     }
